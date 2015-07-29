@@ -16,13 +16,18 @@ class GPOpt(object):
 		self.f = lambda x: cumprod(sin(xx))[-1]
 
 	def samplePoint(self, xx):
-		"""default 'true' function"""
+		"""default 'true' function. Returns a noisy sample of the value 
+		self.f(xx). For applications, simply override this method to link to
+		an outside function evaluation."""
 
 		yy = self.f(xx) + randn()
 
 		return yy
 
 	def addRandomPoint(self):
+		"""Picks a randomly-selected point xx = randn(), then calls 
+		samplePoint(xx) and adds the resulting data to the object."""
+
 		xx = randn()
 
 		yy = self.samplePoint(xx)
@@ -30,6 +35,8 @@ class GPOpt(object):
 		self.updateData(xx,yy)
 
 	def updateData(self, xx, yy):
+		"""Adds a data point (xx, yy) to the data structure."""
+
 		# Add a new data point to the data structure
 		# First, check that the data are of appropriate dimension
 		xx = array(xx, ndmin=2)
@@ -44,13 +51,28 @@ class GPOpt(object):
 		self.Y = array(self.Y, ndmin=2)
 
 	def optimizeModel(self):
+		"""Builds a GPRegression model using X, Y, and the kernel, then 
+		optimizes the parameter values."""
+
 		self.m = GPy.models.GPRegression(self.X, self.Y, self.kernel)
 
 		self.m.optimize()
 
 	def UCB(self, xx, alpha):
+		"""Computes the (1-alpha)th quantile of the posterior distribution
+		at the location xx"""
+
+		# Ensure that data is of appropriate array dimension
+		xx = array(xx, ndmin=2)
+
 		mean, var = self.m.predict(xx)
 
 		Q = mean - sqrt(var)*stats.norm.ppf(alpha)
 
 		return Q
+
+	def maxUCB(self, alpha):
+		"""Finds the value of xx that maximizes the (1-alpha)th quantile of 
+		the posterior distribution. Uses scipy.optimize.minimize."""
+
+		
