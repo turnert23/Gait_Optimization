@@ -1,26 +1,35 @@
 import GPy
 from scipy import stats
+from scipy.optimize import minimize
 
 class GPOpt(object):
 	"""docstring for GPOpt class"""
-	def __init__(self):
+	def __init__(self, dim=1):
 		# Set up data structures for the input and output data
 		self.X = array([[]])
 		self.Y = array([[]])
 
-		self.X.shape = (0, 1)
-		self.Y.shape = (0, 1)
+		# Dimension of the process (number of variables)
+		self.dim = dim
 
-		self.kernel = GPy.kern.RBF(input_dim=1, variance=1., lengthscale=1.)
+		self.X.shape = (0, dim)
+		self.Y.shape = (0, dim)
 
-		self.f = lambda x: cumprod(sin(xx))[-1]
+		self.kernel = GPy.kern.RBF(input_dim=dim, variance=1., lengthscale=1.)
+
+		self.f   = lambda x: cumprod(sin(x))[-1]
+		self.std = 0.5
+
+		#self.fig     = plt.figure()
+		#self.ax  	  = plt.plot()
+		#self.ax.hold = False
 
 	def samplePoint(self, xx):
 		"""default 'true' function. Returns a noisy sample of the value 
 		self.f(xx). For applications, simply override this method to link to
 		an outside function evaluation."""
 
-		yy = self.f(xx) + randn()
+		yy = self.f(xx) + self.std*randn()
 
 		return yy
 
@@ -32,9 +41,9 @@ class GPOpt(object):
 
 		yy = self.samplePoint(xx)
 
-		self.updateData(xx,yy)
+		self.addData(xx,yy)
 
-	def updateData(self, xx, yy):
+	def addData(self, xx, yy):
 		"""Adds a data point (xx, yy) to the data structure."""
 
 		# Add a new data point to the data structure
@@ -58,6 +67,15 @@ class GPOpt(object):
 
 		self.m.optimize()
 
+	def sampleAndUpdate(self, xx):
+		"""Samples the point xx, updates the data structure and model"""
+
+		yy = self.samplePoint(xx)
+
+		self.addData(xx, yy)
+
+		self.optimizeModel()
+
 	def UCB(self, xx, alpha):
 		"""Computes the (1-alpha)th quantile of the posterior distribution
 		at the location xx"""
@@ -74,5 +92,43 @@ class GPOpt(object):
 	def maxUCB(self, alpha):
 		"""Finds the value of xx that maximizes the (1-alpha)th quantile of 
 		the posterior distribution. Uses scipy.optimize.minimize."""
+
+		# Initial condition
+		x0 = randn()
+
+		# Define the optimization objective (with negative sign so we maximize)
+		func = lambda x: -self.UCB(x, alpha)
+
+		# Call the optimizer (may need to add constraints later)
+		res = minimize(func, x0)
+
+		xxMax = res.x
+
+		yyMax = -res.fun
+
+		return xxMax, yyMax
+
+	def gpUCB(self, T=100):
+		
+		# Generate two data points for initialization
+		self.addRandomPoint()
+		self.addRandomPoint()
+
+		# Initialize the model
+		self.optimizeModel()
+
+		fig, self.ax = plt.subplots()
+		self.ax.hold = False
+
+		self.m.plot(ax = self.ax)
+
+		# Run main loop
+		for tt in range(2, T+1):
+			alpha = 1./tt
+			xxNew, yyNew = self.maxUCB(alpha)
+
+			self.sampleAndUpdate(xxNew)
+
+			self.m.plot(ax = self.ax)
 
 		
