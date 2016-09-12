@@ -144,8 +144,13 @@ class GPOpt(object):
 
 
 		for xx in xxInit:
-			self.sampleAndUpdate(xx)
+			yy = self.samplePoint(xx)
 
+			self.addData(xx, yy)
+
+		self.optimizeModel()
+
+	
 	def plotUCB(self, alpha=0.33, n=50):
 		'''Code is only written for dim=1; can be rewritten for dim > 1'''
 		xx = linspace(self.bounds[0], self.bounds[1], n)
