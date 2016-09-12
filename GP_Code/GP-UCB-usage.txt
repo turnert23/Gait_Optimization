@@ -1,0 +1,17 @@
+I’ve written and debugged some Python code to do the UCB algorithm in continuous space. It has one dependency: the GPy package, which is easy enough to find.
+
+The code will need a little bit of work, since the helper functions depend on the dimension of the underlying space (i.e., number of parameters). I’ve only written the helper functions for the cases dim=1 or dim=2. To generalize, modify the initialize() method: it basically samples a coarse grid of points in the space to get the regression code to behave.
+
+The basic usage is as follows:
+
+dim = 2  # dimension of the underlying space.
+
+#instantiate a gpOpt object:
+gp = gpOpt(dim)
+
+# run the algorithm
+gp.runGPUCB()
+
+This opens up a couple of new plots that show the state of the learning algorithm and the cumulative loss.
+
+you can set bounds on the parameter values in gp.bounds: it’s a tuple of ((lowerBound_i, upperBound_i)) for each parameter i.
